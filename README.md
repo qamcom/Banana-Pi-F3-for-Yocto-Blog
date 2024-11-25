@@ -1,93 +1,227 @@
-# Banana Pi F3 for Yocto Blog
+# Building Your Own Yocto Image for Banana Pi F3 #
 
+This document will go through the work done to add initial Yocto support for the RISC-V based development board Banana Pi F3. The work was heavily based on the buildroot work done by Jesse Taube <Mr.Bossman075@gmail.com> and can be found [here](https://github.com/Mr-Bossman/bpi-f3-buildroot).
 
+Please note that this work is a very simple and crude "conversion" from a buildroot configuration to a Yocto layer and there's plenty that can be improved on in the future. More on that at the end of this document.
 
-## Getting started
+But first, let's familiarize ourself a bit with the Banana Pi F3 development board.
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## What is Banana Pi F3? ##
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+Banana Pi F3 is a development board sold by [youyeetoo](https://www.youyeetoo.com/), with an 8 core RISC-V chip from [SpacemiT](https://www.spacemit.com/en/), called Key Stone K1.
 
-## Add your files
+The most exciting feature of this development board is that the K1 chip have hardware support for the RISC-V Vector specification 1.0. For the longest time, the Vector specification was stuck on version 0.7 and never got a ratified state. But now that the specification has been ratified, silicon implementing the specification is slowly starting to pop up on the market.
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+As far as we know, there's only a few proper development boards available today for consumers to get their hands on. And Banana Pi F3 is one of them.
 
+The board itself have the usual features needed for developers to experiment and develop on it. Ethernet, WiFi, Bluetooth 4.2, USB 3.0, HDMI, SD card slot, USB-C, GPIO pins, UART pins, PCIe, and the list goes on.
+
+Overall, it is a very nice development board for those who wishes to explore the RISC-V architecture and experiement with the RISC-V vector 1.0 implementation.
+
+## Why Yocto support? ##
+
+In short:
+
+  * Yocto is an industry standard within the embedded systems industry.
+  * Bianbu Linux BSP is built using buildroot
+  * Bianbu Linux have a few limitations related to open source and documentation
+
+The first point needs no further explanation. So let's dive into the second and third points.
+
+### Bianbu Linux BSP is built using buildroot ###
+
+The [Getting Started Guide](https://docs.banana-pi.org/en/BPI-F3/GettingStarted_BPI-F3) recommends you to download and use pre-built images based on [Bianbu Linux](https://bianbu-linux.spacemit.com/en/). Bianbu Linux is a BSP for the SpacemiT chips, including the Key Stone K1 on Banana Pi F3. The Bianbu Linux is built using buildroot, with forks of a number of git repos, along with a few patches, and one proprietary file needed to make the board boot.
+
+Buildroot in itself is not a bad buildsystem of course. It is just not the industry standard today. That's why we thought it was worth to create a Yocto layer for the Banana Pi F3 board.
+
+### Bianbu Linux BSP limitations ###
+
+The recommended Bianbu Linux is mostly open source and are fairly well documented for the basic operations. However, there are aspects of it that burdens a developer in certain areas.
+
+#### Open source aspects ####
+
+One negative aspect (as of this writing) is that there's a few software components that are not fully open sourced yet, namely these:
+
+  * RCPU (Real-Time CPU) firmware, esos.elf.
+  * Support for the Imagination PowerVR GPU.
+  * Support for video hardware acceleration
+
+These components are distributed as binary blobs. The esos.elf binary blob is required in order to boot the board, while the others are only needed if you need to fully utilize the GPU and hardware accelerated video encoding and decoding.
+
+This is mentioned in the [FAQ](https://bianbu-linux.spacemit.com/en/faqs) which is a plus of course. But it is an aspect you have to take into consideration if you plan to use the GPU's full power and/or hardware acceleration for video.
+
+#### Documentation ####
+
+Another limitation, certainly not as severe as the open source limits mentioned above, is the documentation of the board. Not to say that there's enough documentation in english. There are. Enough at least to build a working distribution according to their instructions. But many parts of the [Development Guide](https://bianbu-linux.spacemit.com/en/development_guide) are still not translated to english. We hope this is still being worked on.
+
+## The meta-bananapi-f3 layer ##
+
+The meta-bananapi-f3 layer aims to provide support for the Banana Pi F3 development board. The current version is very basic but provides the recipes and configurations needed to create an SD card image that will boot the board and give you access to a Linux terminal via UART, an IPv4 address via DHCP and an SSH server.
+
+This initial version uses buildroot's method with genimage to create the SD card image. Future versions will make use of wic instead.
+
+The following recipce directories are used in this layer:
+
+  * recipes-bsp - recipes for OpenSBI and U-Boot
+  * recipes-core - recipe for SD card image creation
+  * recipes-kernel - recipe for the Linux kernel
+  * recipes-devtools - recipes related to genimage
+
+### recipes-bsp ###
+
+There are two recipes in this directory. OpenSBI, and U-Boot. Both recipes configure and build OpenSBI and U-Boot using specific forks and branches.
+
+The U-Boot recipe configures and builds a specific fork of U-Boot v2022.10. In similar fashion, the OpenSBI recipe configures and builds a specific fork of OpenSBI v1.3.
+
+### recipes-core ###
+
+This directory contains a single recipe to create the SD card image. In future versions of the layer, this will be replaced by a wic recipe.
+
+### recipes-kernel ###
+
+The kernel used for the Banana Pi F3 board is based on the 6.1.15 kernel and uses a specific fork for the k1 chip. Future versions of the layer will hopefully use mainline kernel when support for the k1 chip is merged to mainline Linux.
+
+### recipes-devtools ###
+
+Since the layer uses genimage to create the SD card image, we need to add the genimage recipe. The confuse recipe is needed by genimage itself. Both of these recipes will be removed in future versions of the layer when genimage is replaced with wic.
+
+## Build a bootable SD card image using Yocto ##
+
+Regardless the limitations of the Banana Pi F3 development board, it is still a very good board to experiment with the RISC-V vector support and build our own Yocto based distribution. So let's do just that.
+
+## Host Requirements ##
+
+Depending on which Linux distribution you are running, you may need to manually install some host dependencies. It is recommended to use one of the supported Linux distributions though.
+
+See the [the list of supported Linux distributions](https://docs.yoctoproject.org/5.0.4/ref-manual/system-requirements.html#supported-linux-distributions)
+
+It might also be a good idea to take a look at the [System Requirements](https://docs.yoctoproject.org/5.0.4/ref-manual/system-requirements.html#system-requirements).
+
+## Prerequisites ##
+
+Prepare the build by creating a project directory and fetch Poky from the Yocto project. The scarthgap release of Poky is used,
+
+```shell
+mkdir bpi-f3-yocto
+cd bpi-f3-yocto
+git clone git://git.yoctoproject.org/poky -b scarthgap
 ```
-cd existing_repo
-git remote add origin https://gitlab.qamcom.se/magnus.malm/banana-pi-f3-for-yocto-blog.git
-git branch -M main
-git push -uf origin main
+
+We also need to get the meta-riscv layers which our layer depends on:
+
+```shell
+git clone https://github.com/riscv/meta-riscv.git -b scarthgap
 ```
 
-## Integrate with your tools
+## Project setup and configuration ##
 
-- [ ] [Set up project integrations](https://gitlab.qamcom.se/magnus.malm/banana-pi-f3-for-yocto-blog/-/settings/integrations)
+The first thing we need to do is to clone the layer.
 
-## Collaborate with your team
+```shell
+git clone https://gitlab.qamcom.se/magnus.malm/banana-pi-f3-for-yocto.git meta-bananapi-f3
+```
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+Next, we initialize a build directory:
 
-## Test and Deploy
+```shell
+source poky/oe-init-build-env build
+```
 
-Use the built-in continuous integration in GitLab.
+This places you in the build directory with some pre populated files.
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+Two files are of interest to us:
+  * `conf/bblayers.conf`
+  * `conf/local.conf`
 
-***
+Add the following lines to the `BBLAYERS` variable in `conf/bblayers.conf`:
+```
+  /path/to/bpi-f3-yocto/meta-riscv \
+  /path/to/bpi-f3-yocto/meta-bananapi-f3 \
+```
 
-# Editing this README
+Next, change the `MACHINE` variable in `conf/local.conf`.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+Find the line where the default `MACHINE` is set to `qemux86-64` (should be at line 39), and change it to this:
 
-## Suggestions for a good README
+```shell
+MACHINE ??= "bananapi-f3"
+```
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+## Build and prepare SD card ##
 
-## Name
-Choose a self-explaining name for your project.
+All that's left to do now, is to start the build. This will take quite a while. On a Ryzen 7 16 cores 2.7GHz, 32GB RAM, NVMe disk, this took ~40 minutes but can take much longer of course.
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+```shell
+bitbake bananapi-f3-image
+```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+When the build has finished successfully, there will be an image file in <build>/tmp/deploy/images/bananapi-f3/ named sdcard.img.
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+This image file can be written to an SD card with dd, like so:
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+```shell
+sudo dd status=progress oflag=sync bs=1M if=tmp/deploy/images/bananapi-f3/sdcard.img of=/dev/sd<X> ; sync
+```
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+**WARNING** Please make sure you write the image to the correct device (/dev/sd<X>)!
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+## Setup the board ##
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+First, make sure the board is configured to boot from the SD card by making sure the DIP switches are set correctly. All switches except switch 4 should be OFF. (See image below)
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+![DIP switches](bpi-f3-dip-switches.png)
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+Next, connect a serial-to-USB dongle to the UART pins next to the GPIO pins (see image below).
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+![DIP UART](bpi-f3-uart.png)
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+Start your favorite terminal program and connect to the UART device.
 
-## License
-For open source projects, say how it is licensed.
+And don't forget to insert the SD card into the SD card slot too.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+Now you're ready to power on the board. After a short moment, you should be presented with login prompt. Login as root with no password.
+
+**WARNING:** Obviously, make sure the board is only accessible from your internal network, since a root account with no password is the ultimate security flaw.
+
+## Limitations ##
+
+The following limitations exists for the current version of the layer:
+
+### Realtek wireless drivers are not built ###
+
+When building Realtek wireless rtl8852bs driver module, neither big nor little endian is set. For now, we just disable the Realtek wireless drivers.
+
+### No support for the GPU ###
+
+Since the focus of the initial version was to get a Yocto layer to produce a bootable SD card image, no efforts were made on adding GPU support. Future versions of the layer will add this.
+
+### No support for hardware accelerated video ###
+
+Similarly, no effort were made on hardware accelerated video but future versions of the layer will have this added.
+
+### Proprietary binary blob needed to boot the board ###
+
+For now, sadly there's nothing we can do about this. The propriety file  esos.elf needs to be present in the rootfs in order for the board to boot.
+
+## Future improvements ##
+
+There are several improvements that can be made to the layer. Here follows (non-exhaustive) list.
+
+### Use wic to create the SD card image ###
+
+Use wic instead of genimage to create sdcard.img. This will simplify the layer since we no longer need the recipes-devtools directory for the genimage command.
+
+### Fix build warnings ###
+
+There are two warnings emitted by Yocto during build.
+
+  * GCC version mismatch
+  * The TMPDIR path is detected during packaging of the kernel.
+
+### Eliminate U-Boot patch related to out-of-source build ###
+
+The config.mk file used to build the spacemit k1 support in U-Boot is, in the GIT version used for this layer, assuming the build is done in source tree, while the Yocto layer is configured to build out of source tree. As a quick fix, the layer patches in hardcoded paths to get around this mismatch. This is obviously not particularly good and needs to be handled properly.
+
+### Add support for the GPU and hardware accelerated video ###
+
+As mentioned, no effort were made on adding support for GPU or hardware acceleration of video. This should not be that hard to fix in a future version of the layer.
