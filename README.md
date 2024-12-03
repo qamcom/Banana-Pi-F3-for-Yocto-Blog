@@ -23,20 +23,20 @@ Overall, it is a very nice development board for those who wishes to explore the
 In short:
 
   * Yocto is an industry standard within the embedded systems industry.
-  * Bianbu Linux BSP is built using buildroot
+  * Bianbu Linux is built using buildroot
   * Bianbu Linux have a few limitations related to open source and documentation
 
 The first point needs no further explanation. So let's dive into the second and third points.
 
 ### Bianbu Linux BSP is built using buildroot ###
 
-The [Getting Started Guide](https://docs.banana-pi.org/en/BPI-F3/GettingStarted_BPI-F3) recommends you to download and use pre-built images based on [Bianbu Linux](https://bianbu-linux.spacemit.com/en/). Bianbu Linux is a BSP for the SpacemiT chips, including the Key Stone K1 on Banana Pi F3. The Bianbu Linux is built using buildroot, with forks of a number of git repos, along with a few patches, and one proprietary file needed to make the board boot.
+The [Getting Started Guide](https://docs.banana-pi.org/en/BPI-F3/GettingStarted_BPI-F3) recommends you to download and use pre-built images based on [Bianbu Linux](https://bianbu-linux.spacemit.com/en/). Bianbu Linux is a BSP for the SpacemiT chips, including the Key Stone K1 on Banana Pi F3. The Bianbu Linux BSP is built using buildroot, with forks of a number of git repos, along with a few patches, and one proprietary file needed to make the board boot.
 
-Buildroot in itself is not a bad buildsystem of course. It is just not the industry standard today. That's why we thought it was worth to create a Yocto layer for the Banana Pi F3 board.
+Buildroot in itself is not a bad buildsystem of course. It's just not the standard in the embedded industry today. That's why we thought it was worth to create a Yocto layer for the Banana Pi F3 board.
 
 ### Bianbu Linux BSP limitations ###
 
-The recommended Bianbu Linux is mostly open source and are fairly well documented for the basic operations. However, there are aspects of it that burdens a developer in certain areas.
+The recommended Bianbu Linux BSP is mostly open source and are fairly well documented for the basic operations. However, there are aspects of it that burdens a developer in certain areas.
 
 #### Open source aspects ####
 
@@ -56,7 +56,7 @@ Another limitation, certainly not as severe as the open source limits mentioned 
 
 ## The meta-bananapi-f3 layer ##
 
-The meta-bananapi-f3 layer aims to provide support for the Banana Pi F3 development board. The current version is very basic but provides the recipes and configurations needed to create an SD card image that will boot the board and give you access to a Linux terminal via UART, an IPv4 address via DHCP and an SSH server.
+The meta-bananapi-f3 layer aims to provide support for the Banana Pi F3 development board. The current version is very basic but provides the recipes and configurations needed to create an SD card image that will boot the board and give you access to a Linux terminal via UART, an IPv4 address via DHCP, and an SSH server.
 
 This initial version uses buildroot's method with genimage to create the SD card image. Future versions will make use of wic instead.
 
@@ -99,7 +99,7 @@ It might also be a good idea to take a look at the [System Requirements](https:/
 
 ## Prerequisites ##
 
-Prepare the build by creating a project directory and fetch Poky from the Yocto project. The scarthgap release of Poky is used,
+Prepare the build by creating a project directory and fetch Poky from the Yocto project. The `scarthgap` release of Poky is used.
 
 ```shell
 mkdir bpi-f3-yocto
@@ -107,7 +107,7 @@ cd bpi-f3-yocto
 git clone git://git.yoctoproject.org/poky -b scarthgap
 ```
 
-We also need to get the meta-riscv layers which our layer depends on:
+We also need to get the `meta-riscv` layer which our layer depends on:
 
 ```shell
 git clone https://github.com/riscv/meta-riscv.git -b scarthgap
@@ -115,7 +115,7 @@ git clone https://github.com/riscv/meta-riscv.git -b scarthgap
 
 ## Project setup and configuration ##
 
-The first thing we need to do is to clone the layer.
+The first thing we need to do is to clone the `meta-bananapi-f3` layer.
 
 ```shell
 git clone https://gitlab.qamcom.se/magnus.malm/banana-pi-f3-for-yocto.git meta-bananapi-f3
@@ -155,7 +155,7 @@ All that's left to do now, is to start the build. This will take quite a while. 
 bitbake bananapi-f3-image
 ```
 
-When the build has finished successfully, there will be an image file in <build>/tmp/deploy/images/bananapi-f3/ named sdcard.img.
+When the build has finished successfully, there will be an image file in `<build>/tmp/deploy/images/bananapi-f3/` named `sdcard.img`.
 
 This image file can be written to an SD card with dd, like so:
 
@@ -167,7 +167,7 @@ sudo dd status=progress oflag=sync bs=1M if=tmp/deploy/images/bananapi-f3/sdcard
 
 ## Setup the board ##
 
-First, make sure the board is configured to boot from the SD card by making sure the DIP switches are set correctly. All switches except switch 4 should be OFF. (See image below)
+First, ensure that the board is configured to boot from an SD card by setting the DIP switches correctly. All switches except switch 4 should be OFF. (See image below)
 
 ![DIP switches](bpi-f3-dip-switches.png)
 
@@ -179,7 +179,7 @@ Start your favorite terminal program and connect to the UART device.
 
 And don't forget to insert the SD card into the SD card slot too.
 
-Now you're ready to power on the board. After a short moment, you should be presented with login prompt. Login as root with no password.
+Now you're ready to power on the board. After a short moment, you should be presented with a login prompt. Login as root with no password.
 
 **WARNING:** Obviously, make sure the board is only accessible from your internal network, since a root account with no password is the ultimate security flaw.
 
@@ -216,7 +216,7 @@ Use wic instead of genimage to create sdcard.img. This will simplify the layer s
 There are two warnings emitted by Yocto during build.
 
   * GCC version mismatch
-  * The TMPDIR path is detected during packaging of the kernel.
+  * The TMPDIR path is detected in the kernel package QA step.
 
 ### Eliminate U-Boot patch related to out-of-source build ###
 
