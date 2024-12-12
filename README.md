@@ -118,7 +118,8 @@ git clone https://github.com/riscv/meta-riscv.git -b scarthgap
 The first thing we need to do is to clone the `meta-bananapi-f3` layer.
 
 ```shell
-git clone https://gitlab.qamcom.se/magnus.malm/banana-pi-f3-for-yocto.git meta-bananapi-f3
+git clone https://github.com/qamcom/Banana-Pi-F3-for-Yocto.git meta-bananapi-f3
+
 ```
 
 Next, we initialize a build directory:
