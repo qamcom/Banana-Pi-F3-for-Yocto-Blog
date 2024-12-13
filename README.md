@@ -1,8 +1,6 @@
 # Building Your Own Yocto Image for Banana Pi F3 #
 
-This document will go through the work done to add initial Yocto support for the RISC-V based development board Banana Pi F3. The work was heavily based on the buildroot work done by Jesse Taube <Mr.Bossman075@gmail.com> and can be found [here](https://github.com/Mr-Bossman/bpi-f3-buildroot).
-
-Please note that this work is a very simple and crude "conversion" from a buildroot configuration to a Yocto layer and there's plenty that can be improved on in the future. More on that at the end of this document.
+This document will go through the work done to add initial Yocto support for the RISC-V based development board Banana Pi F3. The work was based on a buildroot configuration for the same board and there are several things that can be improved on in the future. More on that at the end of this document.
 
 But first, let's familiarize ourself a bit with the Banana Pi F3 development board.
 
@@ -10,9 +8,9 @@ But first, let's familiarize ourself a bit with the Banana Pi F3 development boa
 
 Banana Pi F3 is a development board sold by [youyeetoo](https://www.youyeetoo.com/), with an 8 core RISC-V chip from [SpacemiT](https://www.spacemit.com/en/), called Key Stone K1.
 
-The most exciting feature of this development board is that the K1 chip have hardware support for the RISC-V Vector specification 1.0. For the longest time, the Vector specification was stuck on version 0.7 and never got a ratified state. But now that the specification has been ratified, silicon implementing the specification is slowly starting to pop up on the market.
+The most exciting feature of this development board is that the K1 chip has hardware support for the RISC-V Vector specification 1.0. For the longest time, the Vector specification was stuck on version 0.7 and never got a ratified state. But now that the specification has been ratified, silicon implementing the specification is slowly starting to pop up on the market.
 
-As far as we know, there's only a few proper development boards available today for consumers to get their hands on. And Banana Pi F3 is one of them.
+There are today a few proper development boards available today for consumers to get their hands on. And Banana Pi F3 is one of the most popular.
 
 The board itself have the usual features needed for developers to experiment and develop on it. Ethernet, WiFi, Bluetooth 4.2, USB 3.0, HDMI, SD card slot, USB-C, GPIO pins, UART pins, PCIe, and the list goes on.
 
@@ -57,8 +55,6 @@ Another limitation, certainly not as severe as the open source limits mentioned 
 ## The meta-bananapi-f3 layer ##
 
 The meta-bananapi-f3 layer aims to provide support for the Banana Pi F3 development board. The current version is very basic but provides the recipes and configurations needed to create an SD card image that will boot the board and give you access to a Linux terminal via UART, an IPv4 address via DHCP, and an SSH server.
-
-This initial version uses buildroot's method with genimage to create the SD card image. Future versions will make use of wic instead.
 
 The following recipce directories are used in this layer:
 
@@ -184,45 +180,4 @@ Now you're ready to power on the board. After a short moment, you should be pres
 
 **WARNING:** Obviously, make sure the board is only accessible from your internal network, since a root account with no password is the ultimate security flaw.
 
-## Limitations ##
-
-The following limitations exists for the current version of the layer:
-
-### Realtek wireless drivers are not built ###
-
-When building Realtek wireless rtl8852bs driver module, neither big nor little endian is set. For now, we just disable the Realtek wireless drivers.
-
-### No support for the GPU ###
-
-Since the focus of the initial version was to get a Yocto layer to produce a bootable SD card image, no efforts were made on adding GPU support. Future versions of the layer will add this.
-
-### No support for hardware accelerated video ###
-
-Similarly, no effort were made on hardware accelerated video but future versions of the layer will have this added.
-
-### Proprietary binary blob needed to boot the board ###
-
-For now, sadly there's nothing we can do about this. The propriety file  esos.elf needs to be present in the rootfs in order for the board to boot.
-
-## Future improvements ##
-
-There are several improvements that can be made to the layer. Here follows (non-exhaustive) list.
-
-### Use wic to create the SD card image ###
-
-Use wic instead of genimage to create sdcard.img. This will simplify the layer since we no longer need the recipes-devtools directory for the genimage command.
-
-### Fix build warnings ###
-
-There are two warnings emitted by Yocto during build.
-
-  * GCC version mismatch
-  * The TMPDIR path is detected in the kernel package QA step.
-
-### Eliminate U-Boot patch related to out-of-source build ###
-
-The config.mk file used to build the spacemit k1 support in U-Boot is, in the GIT version used for this layer, assuming the build is done in source tree, while the Yocto layer is configured to build out of source tree. As a quick fix, the layer patches in hardcoded paths to get around this mismatch. This is obviously not particularly good and needs to be handled properly.
-
-### Add support for the GPU and hardware accelerated video ###
-
-As mentioned, no effort were made on adding support for GPU or hardware acceleration of video. This should not be that hard to fix in a future version of the layer.
+And with this we have a ready-to-use development environment for RISC-V with vector extensions built from an industry standard Linux distribution. As a next step we hope to dig deeper into what you can do with this.
